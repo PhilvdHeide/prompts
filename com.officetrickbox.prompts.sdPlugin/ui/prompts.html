@@ -1,51 +1,21 @@
-<!-- <!DOCTYPE html> -->
-<!-- <html> -->
-<!--  -->
-<!-- <head lang="en"> -->
-    <!-- <title>Increment Counter Settings</title> -->
-    <!-- <meta charset="utf-8" /> -->
-    <!-- <script src="https://sdpi-components.dev/releases/v3/sdpi-components.js"></script> -->
-<!-- </head> -->
-<!--  -->
-<!-- <body> -->
-    <!-- < -->
-        <!-- Learn more about property inspector components at https://sdpi-components.dev/docs/components -->
-    <!-- --> 
-    <!-- <sdpi-item label="Increment By"> -->
-        <!-- <sdpi-range setting="incrementBy" min="1" max="5" step="1" default="1" showlabels></sdpi-range> -->
-    <!-- </sdpi-item> -->
-<!-- </body> -->
-<!--  -->
-<!-- </html> -->
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>Prompts Settings</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Settings</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script src="../libs/streamdeck-api.js"></script>
 </head>
 <body>
     <div class="sdpi-wrapper">
         <div class="sdpi-item">
-            <div class="sdpi-item-label">Prompt Text</div>
-            <div class="sdpi-item-value">
-                <textarea class="sdpi-item-value" id="promptText" rows="5" 
-                    placeholder="Enter your AI prompt text here..."></textarea>
-            </div>
+            <label class="sdpi-item-label" for="promptTitle">Button Title</label>
+            <input type="text" id="promptTitle" class="sdpi-item-value" placeholder="Enter button title">
         </div>
-
+        
         <div class="sdpi-item">
-            <div class="sdpi-item-label">Title</div>
-            <div class="sdpi-item-value">
-                <input class="sdpi-item-value" id="promptTitle" type="text" 
-                    placeholder="Button Title (optional)">
-            </div>
-        </div>
-
-        <div class="sdpi-item">
-            <button class="sdpi-item-value" id="saveSettings">Save Settings</button>
+            <label class="sdpi-item-label" for="promptText">Prompt Text</label>
+            <textarea id="promptText" class="sdpi-item-value" rows="6" placeholder="Enter your AI prompt text"></textarea>
         </div>
     </div>
 

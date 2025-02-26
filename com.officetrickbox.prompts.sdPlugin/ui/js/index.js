@@ -1,109 +1,54 @@
-// Property Inspector for Prompts Plugin
+// Stream Deck Property Inspector JavaScript
+const connectElgatoStreamDeckSocket = (inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) => {
+    const websocket = new WebSocket(`ws://localhost:${inPort}`);
+    let settings = {};
 
-// Variables to store references to UI elements
-var promptTextElement;
-var promptTitleElement;
-var saveButtonElement;
-var settings = {};
-
-// WebSocket connection to Stream Deck
-var websocket = null;
-
-// Connect to Stream Deck
-function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
-    // Create WebSocket connection to StreamDeck
-    websocket = new WebSocket("ws://127.0.0.1:" + inPort);
-
-    // When connection is established
-    websocket.onopen = function() {
-        // Register the Property Inspector with Stream Deck
-        const json = {
-            event: inRegisterEvent,
-            uuid: inPropertyInspectorUUID
-        };
-        websocket.send(JSON.stringify(json));
-
-        // Request settings for this instance
-        const getSettings = {
-            "event": "getSettings",
-            "context": inPropertyInspectorUUID
-        };
-        websocket.send(JSON.stringify(getSettings));
-    };
-
-    // When a message is received from Stream Deck
-    websocket.onmessage = function(evt) {
-        // Parse the message
-        const jsonObj = JSON.parse(evt.data);
-        const event = jsonObj.event;
-        
-        // Handle different event types
-        if (event === "didReceiveSettings") {
-            // Save the settings
-            settings = jsonObj.payload.settings;
-            
-            // Update the UI with the stored settings
-            updateUI();
+    // Handle incoming messages from Stream Deck
+    websocket.onmessage = (event) => {
+        const json = JSON.parse(event.data);
+        if (json.event === 'didReceiveSettings') {
+            // Update settings from Stream Deck
+            settings = json.payload.settings;
+            updateUI(settings);
         }
     };
 
-    // Initialize the UI when the document is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get references to UI elements
-        promptTextElement = document.getElementById('promptText');
-        promptTitleElement = document.getElementById('promptTitle');
-        saveButtonElement = document.getElementById('saveSettings');
-
-        // Add event listeners
-        saveButtonElement.addEventListener('click', saveSettings);
-        
-        // Parse the inActionInfo to get the current settings
-        if (inActionInfo) {
-            const actionInfo = JSON.parse(inActionInfo);
-            settings = actionInfo.payload.settings || {};
-            updateUI();
-        }
-    });
-}
-
-// Update the UI with the current settings
-function updateUI() {
-    if (promptTextElement && settings) {
-        promptTextElement.value = settings.promptText || '';
-        promptTitleElement.value = settings.promptTitle || '';
+    // Update UI elements with current settings
+    function updateUI(settings) {
+        document.getElementById('promptTitle').value = settings.promptTitle || '';
+        document.getElementById('promptText').value = settings.promptText || '';
     }
-}
 
-// Save the settings to the Stream Deck
-function saveSettings() {
-    if (!websocket) return;
-
-    // Get values from UI
-    const promptText = promptTextElement.value;
-    const promptTitle = promptTitleElement.value;
-
-    // Save to settings object
-    settings.promptText = promptText;
-    settings.promptTitle = promptTitle;
-
-    // Send settings to Stream Deck
-    const json = {
-        "event": "setSettings",
-        "context": inPropertyInspectorUUID,
-        "payload": settings
-    };
-    websocket.send(JSON.stringify(json));
-
-    // If title is set, also update the button title
-    if (promptTitle) {
-        const setTitle = {
-            "event": "setTitle",
-            "context": inPropertyInspectorUUID,
-            "payload": {
-                "title": promptTitle,
-                "target": 0
+    // Send settings to Stream Deck when changed
+    function sendSettings() {
+        const payload = {
+            event: 'setSettings',
+            context: inUUID,
+            payload: {
+                promptTitle: document.getElementById('promptTitle').value,
+                promptText: document.getElementById('promptText').value
             }
         };
-        websocket.send(JSON.stringify(setTitle));
+        websocket.send(JSON.stringify(payload));
     }
-}
+
+    // Setup event listeners for UI changes
+    document.getElementById('promptTitle').addEventListener('input', sendSettings);
+    document.getElementById('promptText').addEventListener('input', sendSettings);
+
+    // Register with Stream Deck
+    websocket.onopen = () => {
+        const registerMessage = {
+            event: inRegisterEvent,
+            uuid: inUUID
+        };
+        websocket.send(JSON.stringify(registerMessage));
+
+        // Request current settings
+        const getSettingsMessage = {
+            event: 'getSettings',
+            context: inUUID
+        };
+        websocket.send(JSON.stringify(getSettingsMessage));
+    };
+};

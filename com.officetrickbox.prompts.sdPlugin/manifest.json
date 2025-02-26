@@ -1,47 +1,45 @@
 {
-	"Name": "Prompts",
-	"Version": "0.1.0.0",
-	"Author": "OfficeTrickBox",
-	"Actions": [
-		{
-			"Name": "Prompts",
-			"UUID": "com.officetrickbox.prompts.increment",
-			"Icon": "imgs/actions/counter/icon",
-			"Tooltip": "Paste a predefined AI prompt at cursor position",
-			"PropertyInspectorPath": "ui/prompts.html",
-			"Controllers": [
-				"Keypad"
-			],
-			"States": [
-				{
-					"Image": "imgs/actions/counter/key",
-					"TitleAlignment": "middle"
-				}
-			]
-		}
-	],
-	"Category": "Prompts",
-	"CategoryIcon": "imgs/plugin/category-icon",
-	"CodePath": "bin/plugin.js",
-	"Description": "Prompts for AI ChatBots",
-	"Icon": "imgs/plugin/marketplace",
-	"SDKVersion": 2,
-	"Software": {
-		"MinimumVersion": "6.4"
-	},
-	"OS": [
-		{
-			"Platform": "mac",
-			"MinimumVersion": "12"
-		},
-		{
-			"Platform": "windows",
-			"MinimumVersion": "10"
-		}
-	],
-	"Nodejs": {
-		"Version": "20",
-		"Debug": "enabled"
-	},
-	"UUID": "com.officetrickbox.prompts"
+    "Name": "Prompts",
+    "Version": "0.1.0.0",
+    "Author": "OfficeTrickBox",
+    "Actions": [
+        {
+            "Name": "Paste Prompt",
+            "UUID": "com.officetrickbox.prompts.paste",
+            "Icon": "imgs/actions/counter/icon",
+            "Tooltip": "Paste a predefined AI prompt at cursor position",
+            "PropertyInspectorPath": "ui/prompts.html",
+            "Controllers": ["Keypad"],
+            "States": [
+                {
+                    "Image": "imgs/actions/counter/key",
+                    "TitleAlignment": "middle"
+                }
+            ]
+        }
+    ],
+    "Category": "Prompts",
+    "CategoryIcon": "imgs/plugin/category-icon",
+    "CodePath": "bin/plugin.js",
+    "Description": "Quickly paste AI chatbot prompts using Stream Deck",
+    "Icon": "imgs/plugin/marketplace",
+    "SDKVersion": 2,
+    "Software": {
+        "MinimumVersion": "6.4"
+    },
+    "OS": [
+        {
+            "Platform": "mac",
+            "MinimumVersion": "12"
+        },
+        {
+            "Platform": "windows",
+            "MinimumVersion": "10"
+        }
+    ],
+    "Nodejs": {
+        "Version": "20",
+        "Debug": "enabled"
+    },
+    "UUID": "com.officetrickbox.prompts"
 }

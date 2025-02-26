@@ -1,105 +1,178 @@
-import { action, KeyDownEvent, SingletonAction, WillAppearEvent, DidReceiveSettingsEvent } from "@elgato/streamdeck";
+import { 
+    SingletonAction, 
+    action, 
+    SendToPluginEvent, 
+    WillAppearEvent, 
+    JsonValue
+} from '@elgato/streamdeck';
+import { exec } from 'child_process';
+
+interface Settings extends Record<string, JsonValue> {
+    promptText?: string;
+}
 
 /**
- * Settings interface for the PastePrompt action.
- * Defines the structure of settings that will be saved and retrieved.
+ * Paste Prompt Action
  */
-type PromptSettings = {
-  promptText?: string;
-  promptTitle?: string;
-};
+@action({ UUID: 'com.officetrickbox.prompts.paste' })
+export class PastePromptAction extends SingletonAction<Settings> {
+    private settings: Settings = { promptText: '' } as Settings;
+    private context: string | undefined;
 
-/**
- * The PastePrompt action allows users to define AI prompt templates
- * that can be quickly pasted at the cursor position when the Stream Deck button is pressed.
- */
-@action({ UUID: "com.officetrickbox.prompts.paste" })
-export class PastePrompt extends SingletonAction<PromptSettings> {
-  /**
-   * When the action appears in the Stream Deck (e.g., when navigating to a page containing this action),
-   * we set the title to match the custom title from settings if one exists.
-   */
-  override onWillAppear(ev: WillAppearEvent<PromptSettings>): void | Promise<void> {
-    // If we have a custom title in settings, use that for the button
-    const title = ev.payload.settings.promptTitle || "";
-    return ev.action.setTitle(title);
-  }
-
-  /**
-   * When settings are updated (e.g., from the Property Inspector), update the button title
-   * to reflect any changes to the promptTitle.
-   */
-  override onDidReceiveSettings(ev: DidReceiveSettingsEvent<PromptSettings>): void | Promise<void> {
-    // Update the title when settings change
-    const title = ev.payload.settings.promptTitle || "";
-    return ev.action.setTitle(title);
-  }
-
-  /**
-   * When the button is pressed, this method is called.
-   * We retrieve the prompt text from settings and initiate the paste operation.
-   */
-  override async onKeyDown(ev: KeyDownEvent<PromptSettings>): Promise<void> {
-    const { settings } = ev.payload;
-    
-    // Default message if no prompt text is defined
-    const promptText = settings.promptText || "Please define your prompt text in the settings.";
-    
-    try {
-      // Use the Stream Deck SDK's clipboard API
-      // Note: The actual implementation depends on the SDK's capabilities
-      await this.pastePromptText(promptText);
-      
-      // Show success feedback on the button
-      await ev.action.showOk();
-    } catch (error) {
-      // Log error and show failure feedback
-      streamDeck.logger.error(`Failed to paste prompt: ${error}`);
-      await ev.action.showAlert();
+    constructor() {
+        super();
+        console.log('PastePromptAction initialized');
     }
-  }
 
-  /**
-   * Helper method that handles the actual clipboard and paste operation.
-   * This encapsulates the platform-specific functionality.
-   */
-  private async pastePromptText(text: string): Promise<void> {
-    // First approach: Using the navigator.clipboard API if available
-    try {
-      // Copy text to clipboard
-      await navigator.clipboard.writeText(text);
-      
-      // The SDK doesn't provide a direct way to simulate keypresses outside its context
-      // We'll use a combination of available APIs to try to achieve this
-      
-      // Option 1: Use the system.executeCommand API if available
-      if (typeof streamDeck.system?.executeCommand === 'function') {
-        // On Windows, we might use something like:
-        if (navigator.platform.indexOf('Win') !== -1) {
-          // This is a conceptual placeholder - actual implementation will depend on SDK capabilities
-          await streamDeck.system.executeCommand('powershell', [
-            '-command', 
-            'Add-Type -AssemblyName System.Windows.Forms;' +
-            '[System.Windows.Forms.SendKeys]::SendWait("^v");'
-          ]);
-        } 
-        // On macOS, we might use:
-        else if (navigator.platform.indexOf('Mac') !== -1) {
-          await streamDeck.system.executeCommand('osascript', [
-            '-e', 
-            'tell application "System Events" to keystroke "v" using command down'
-          ]);
+    override async onWillAppear(ev: WillAppearEvent<Settings>) {
+        this.context = ev.payload.context;
+        console.log('Action appeared:', ev.payload.settings);
+        this.settings = ev.payload.settings || {};
+        await this.updateTitle();
+    }
+
+    private async setSettings(settings: Settings): Promise<void> {
+        this.settings = settings;
+        await this.settingsManager.setSettings(this.context!, settings);
+    }
+
+    private async setTitle(title: string): Promise<void> {
+        await this.settingsManager.setTitle(this.context!, title);
+    }
+
+    private async updateTitle() {
+        try {
+            const title = this.settings.promptText || 'No Prompt';
+            await this.setSettings(this.settings);
+            await this.setTitle(title.substring(0, 10));
+        } catch (error) {
+            console.error('Error updating title:', error);
         }
-      } 
-      // Option 2: If executeCommand isn't available, log a warning
-      else {
-        streamDeck.logger.warn("System command execution not available. Text copied to clipboard but paste not automated.");
-      }
-      
-      return;
-    } catch (error) {
-      streamDeck.logger.error(`Clipboard operation failed: ${error}`);
-      throw new Error(`Failed to access clipboard: ${error}`);
     }
-  }
+
+    override async onKeyDown() {
+        try {
+            console.log('Key pressed - starting paste operation');
+            console.log('Current settings:', JSON.stringify(this.settings));
+            
+            const promptText = this.settings.promptText || '';
+            console.log('Prompt text:', promptText);
+            
+            if (promptText) {
+                console.log('Writing to clipboard...');
+                await this.writeToClipboard(promptText);
+                console.log('Clipboard write successful');
+                
+                console.log('Simulating paste...');
+                await this.simulatePaste();
+                console.log('Paste simulation complete');
+            } else {
+                console.log('No prompt text configured');
+                console.warn('Please configure prompt text in the action settings');
+            }
+        } catch (error) {
+            console.error('Error pasting prompt:', error);
+            if (error instanceof Error) {
+                console.error('Error stack:', error.stack);
+            }
+        }
+    }
+
+    override async onWillDisappear() {
+        // Clean up when action disappears
+    }
+
+    override async onSendToPlugin(ev: SendToPluginEvent<JsonValue, Settings>) {
+        // Update settings when changed in Property Inspector
+        if (ev.payload && typeof ev.payload === 'object' && 'settings' in ev.payload) {
+            const settings = ev.payload.settings;
+            if (typeof settings === 'object' && settings !== null) {
+                this.settings = {
+                    promptText: 'promptText' in settings && typeof settings.promptText === 'string' 
+                        ? settings.promptText 
+                        : ''
+                };
+            }
+        }
+    }
+
+    private writeToClipboard(text: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            try {
+                const platform = process.platform;
+                console.log(`Detected platform: ${platform}`);
+                
+                const command = platform === 'win32' 
+                    ? `echo ${text.replace(/"/g, '\\"')} | clip`
+                    : platform === 'darwin'
+                        ? `echo "${text.replace(/"/g, '\\"')}" | pbcopy`
+                        : `echo "${text.replace(/"/g, '\\"')}" | xclip -selection clipboard`;
+
+                console.log(`Executing clipboard command: ${command}`);
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`Clipboard command failed: ${error.message}`);
+                        console.error(`stderr: ${stderr}`);
+                        reject(error);
+                    } else {
+                        console.log('Clipboard write successful');
+                        console.log(`stdout: ${stdout}`);
+                        resolve();
+                    }
+                });
+            } catch (error) {
+                console.error('Unexpected error in writeToClipboard:', error);
+                reject(error);
+            }
+        });
+    }
+
+    private async checkCommandAvailability(command: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            exec(`which ${command}`, (error) => {
+                if (error) {
+                    reject(new Error(`${command} not found`));
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    private async simulatePaste(): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const platform = process.platform;
+                console.log(`Detected platform: ${platform}`);
+                
+                // Check if required utilities are installed
+                if (platform === 'linux') {
+                    await this.checkCommandAvailability('xclip');
+                    await this.checkCommandAvailability('xdotool');
+                }
+
+                const command = platform === 'win32'
+                    ? `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('^v')"`
+                    : platform === 'darwin'
+                        ? `osascript -e 'tell application "System Events" to keystroke "v" using command down'`
+                        : `xdotool key --clearmodifiers ctrl+v`;
+
+                console.log(`Executing paste command: ${command}`);
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`Paste command failed: ${error.message}`);
+                        console.error(`stderr: ${stderr}`);
+                        reject(error);
+                    } else {
+                        console.log('Paste simulation successful');
+                        console.log(`stdout: ${stdout}`);
+                        resolve();
+                    }
+                });
+            } catch (error) {
+                console.error('Unexpected error in simulatePaste:', error);
+                reject(error);
+            }
+        });
+    }
 }
