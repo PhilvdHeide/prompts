@@ -4,11 +4,11 @@
 	"Author": "OfficeTrickBox",
 	"Actions": [
 		{
-			"Name": "Counter",
+			"Name": "Prompts",
 			"UUID": "com.officetrickbox.prompts.increment",
 			"Icon": "imgs/actions/counter/icon",
-			"Tooltip": "Displays a count, which increments by one on press.",
-			"PropertyInspectorPath": "ui/increment-counter.html",
+			"Tooltip": "Paste a predefined AI prompt at cursor position",
+			"PropertyInspectorPath": "ui/prompts.html",
 			"Controllers": [
 				"Keypad"
 			],
